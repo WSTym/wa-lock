@@ -13,6 +13,13 @@
   <a href="https://github.com/WSTym/wa-lock/pulls"><img src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg" alt="PRs Welcome"></a>
 </p>
 
+<p align="center">
+  <b>🇧🇷 Português</b> • 
+  <a href="README.en.md">🇺🇸 English</a>
+</p>
+
+---
+
 Extensão leve e prática para o **Brave, Google Chrome e navegadores baseados em Chromium** que une duas ações de segurança em um único clique ou atalho: **fecha a conversa aberta** e aciona o **Bloqueio do App** nativo do [WhatsApp Web](https://web.whatsapp.com).
 
 ---
