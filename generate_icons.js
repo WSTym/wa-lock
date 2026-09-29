@@ -1,87 +1,152 @@
 import fs from 'fs';
 import zlib from 'zlib';
 
-function createPNG(width, height, r, g, b, a) {
-  // Simple PNG generator using zlib
+function createIconPNG(size) {
   const signature = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]);
 
   // IHDR
   const ihdrData = Buffer.alloc(13);
-  ihdrData.writeUInt32BE(width, 0);
-  ihdrData.writeUInt32BE(height, 4);
-  ihdrData.writeUInt8(8, 8); // bit depth 8
-  ihdrData.writeUInt8(6, 9); // color type 6 (RGBA)
-  ihdrData.writeUInt8(0, 10); // compression
-  ihdrData.writeUInt8(0, 11); // filter
-  ihdrData.writeUInt8(0, 12); // interlace
+  ihdrData.writeUInt32BE(size, 0);
+  ihdrData.writeUInt32BE(size, 4);
+  ihdrData.writeUInt8(8, 8); // 8 bits
+  ihdrData.writeUInt8(6, 9); // RGBA
+  ihdrData.writeUInt8(0, 10);
+  ihdrData.writeUInt8(0, 11);
+  ihdrData.writeUInt8(0, 12);
 
   const ihdr = makeChunk('IHDR', ihdrData);
 
-  // Raw image data with scanline filters (filter byte = 0)
-  const rowSize = 1 + width * 4;
-  const rawData = Buffer.alloc(height * rowSize);
+  const rowSize = 1 + size * 4;
+  const rawData = Buffer.alloc(size * rowSize);
 
-  // Draw a lock icon on a circular dark green background
-  const cx = width / 2;
-  const cy = height / 2;
-  const radius = width * 0.45;
+  const cx = size / 2;
+  const cy = size / 2;
+  const radius = size * 0.46;
+  const scale = size * 0.42;
 
-  for (let y = 0; y < height; y++) {
-    const rowOffset = y * rowSize;
-    rawData[rowOffset] = 0; // Filter None
+  // 4x4 Supersampling for ultra-crisp antialiasing
+  const subSamples = 4;
+  const subStep = 1 / subSamples;
 
-    for (let x = 0; x < width; x++) {
-      const pxOffset = rowOffset + 1 + x * 4;
-      const dx = x - cx + 0.5;
-      const dy = y - cy + 0.5;
-      const dist = Math.sqrt(dx * dx + dy * dy);
+  for (let py = 0; py < size; py++) {
+    const rowOffset = py * rowSize;
+    rawData[rowOffset] = 0; // Filter 0
 
-      // Background circle
-      if (dist <= radius) {
-        // WhatsApp green #25D366 -> rgb(37, 211, 102)
-        // Dark background #128C7E / #075E54
-        let pr = 37, pg = 211, pb = 102, pa = 255;
+    for (let px = 0; px < size; px++) {
+      let totalR = 0, totalG = 0, totalB = 0, totalA = 0;
 
-        // Draw lock body and shackle inside
-        // Normalize coordinates to [-1, 1]
-        const nx = (x - cx) / (radius * 0.75);
-        const ny = (y - cy) / (radius * 0.75);
+      for (let sy = 0; sy < subSamples; sy++) {
+        for (let sx = 0; sx < subSamples; sx++) {
+          const x = px + (sx + 0.5) * subStep;
+          const y = py + (sy + 0.5) * subStep;
 
-        // Lock shackle (loop): ny between -0.6 and 0.0, nx between -0.4 and 0.4
-        const inShackleArch = (ny >= -0.65 && ny <= 0.0) && (Math.abs(nx) >= 0.22 && Math.abs(nx) <= 0.42) && (ny >= -0.2 || (nx * nx + (ny + 0.2) * (ny + 0.2) <= 0.22 && nx * nx + (ny + 0.2) * (ny + 0.2) >= 0.06));
-        // Lock body (rectangle): nx between -0.45 and 0.45, ny between -0.05 and 0.6
-        const inBody = (nx >= -0.48 && nx <= 0.48 && ny >= -0.08 && ny <= 0.6);
-        // Keyhole
-        const inKeyholeCircle = (nx * nx + (ny - 0.18) * (ny - 0.18) <= 0.015);
-        const inKeyholeStem = (Math.abs(nx) <= 0.05 && ny >= 0.18 && ny <= 0.38);
-        const inKeyhole = inKeyholeCircle || inKeyholeStem;
+          const dx = x - cx;
+          const dy = y - cy;
+          const dist = Math.sqrt(dx * dx + dy * dy);
 
-        if (inBody || inShackleArch) {
-          if (inKeyhole) {
-            pr = 18; pg = 140; pb = 126; pa = 255;
-          } else {
-            pr = 255; pg = 255; pb = 255; pa = 255;
+          if (dist <= radius) {
+            // Inside background circle
+            // WhatsApp green/teal gradient: #00a884 to #128c7e
+            const gradT = (y / size);
+            const bgR = Math.round(0 * (1 - gradT) + 18 * gradT);
+            const bgG = Math.round(168 * (1 - gradT) + 140 * gradT);
+            const bgB = Math.round(132 * (1 - gradT) + 126 * gradT);
+
+            // Normalized coordinates for the lock
+            // Center of the lock body is slightly below the circle center
+            const nx = dx / scale;
+            const ny = (dy + size * 0.02) / scale; // shifted slightly down for visual balance
+
+            // --- Lock Geometry ---
+            // 1. Shackle (Arco do cadeado)
+            // Arch center at (0, -0.06)
+            const archCy = -0.06;
+            const archDy = ny - archCy;
+            const rShackle = Math.sqrt(nx * nx + archDy * archDy);
+            const rOut = 0.32;
+            const rIn = 0.17;
+
+            // Semi-circle top arch
+            const inArch = (archDy <= 0) && (rShackle >= rIn && rShackle <= rOut);
+            // Straight vertical legs going into the lock body
+            const inLegs = (archDy > 0 && archDy <= 0.12) && (Math.abs(nx) >= rIn && Math.abs(nx) <= rOut);
+            const inShackle = inArch || inLegs;
+
+            // 2. Lock Body (Corpo do cadeado)
+            // Box from nx: [-0.42, 0.42], ny: [-0.04, 0.50]
+            const bLeft = -0.42, bRight = 0.42, bTop = -0.04, bBottom = 0.50;
+            const cornerR = 0.08;
+
+            let inBody = false;
+            if (nx >= bLeft && nx <= bRight && ny >= bTop && ny <= bBottom) {
+              // Rounded corners check
+              const nearLeft = nx < bLeft + cornerR;
+              const nearRight = nx > bRight - cornerR;
+              const nearTop = ny < bTop + cornerR;
+              const nearBottom = ny > bBottom - cornerR;
+
+              if (nearLeft && nearTop) {
+                const cdx = nx - (bLeft + cornerR);
+                const cdy = ny - (bTop + cornerR);
+                inBody = (cdx * cdx + cdy * cdy <= cornerR * cornerR);
+              } else if (nearRight && nearTop) {
+                const cdx = nx - (bRight - cornerR);
+                const cdy = ny - (bTop + cornerR);
+                inBody = (cdx * cdx + cdy * cdy <= cornerR * cornerR);
+              } else if (nearLeft && nearBottom) {
+                const cdx = nx - (bLeft + cornerR);
+                const cdy = ny - (bBottom - cornerR);
+                inBody = (cdx * cdx + cdy * cdy <= cornerR * cornerR);
+              } else if (nearRight && nearBottom) {
+                const cdx = nx - (bRight - cornerR);
+                const cdy = ny - (bBottom - cornerR);
+                inBody = (cdx * cdx + cdy * cdy <= cornerR * cornerR);
+              } else {
+                inBody = true;
+              }
+            }
+
+            // 3. Keyhole (Fechadura) inside body
+            let inKeyhole = false;
+            if (inBody) {
+              // Circle at (0, 0.17), radius 0.075
+              const khDy = ny - 0.17;
+              const inKhCircle = (nx * nx + khDy * khDy <= 0.072 * 0.072);
+              // Stem extending downwards: ny between 0.17 and 0.33
+              const inKhStem = (ny >= 0.17 && ny <= 0.33) && (Math.abs(nx) <= (0.032 + (ny - 0.17) * 0.08));
+              inKeyhole = inKhCircle || inKhStem;
+            }
+
+            if ((inBody || inShackle) && !inKeyhole) {
+              // Crisp White lock
+              totalR += 255;
+              totalG += 255;
+              totalB += 255;
+              totalA += 255;
+            } else if (inKeyhole) {
+              // Keyhole cutout matches the dark teal
+              totalR += 14;
+              totalG += 105;
+              totalB += 95;
+              totalA += 255;
+            } else {
+              // Background
+              totalR += bgR;
+              totalG += bgG;
+              totalB += bgB;
+              totalA += 255;
+            }
           }
-        } else {
-          // Circular gradient or solid green
-          pr = 18; pg = 140; pb = 126; pa = 255; // Dark teal/green
+          // Outside background circle: transparent (totalA += 0)
         }
-
-        // Anti-aliasing edge
-        if (dist > radius - 1) {
-          pa = Math.floor(255 * (radius - dist));
-        }
-
-        rawData[pxOffset] = pr;
-        rawData[pxOffset + 1] = pg;
-        rawData[pxOffset + 2] = pb;
-        rawData[pxOffset + 3] = pa;
-      } else {
-        rawData[pxOffset] = 0;
-        rawData[pxOffset + 1] = 0;
-        rawData[pxOffset + 2] = 0;
-        rawData[pxOffset + 3] = 0; // Transparent
       }
+
+      const numSamples = subSamples * subSamples;
+      const pxOffset = rowOffset + 1 + px * 4;
+      rawData[pxOffset] = Math.round(totalR / numSamples);
+      rawData[pxOffset + 1] = Math.round(totalG / numSamples);
+      rawData[pxOffset + 2] = Math.round(totalB / numSamples);
+      rawData[pxOffset + 3] = Math.round(totalA / numSamples);
     }
   }
 
@@ -106,7 +171,7 @@ function makeChunk(type, data) {
   return Buffer.concat([len, body, crcBuf]);
 }
 
-// CRC32 implementation
+// CRC32
 function crc32(buf) {
   let crc = 0 ^ (-1);
   for (let i = 0; i < buf.length; i++) {
@@ -124,11 +189,7 @@ for (let i = 0; i < 256; i++) {
   table[i] = c;
 }
 
-if (!fs.existsSync('icons')) {
-  fs.mkdirSync('icons');
-}
-
-fs.writeFileSync('icons/icon16.png', createPNG(16, 16));
-fs.writeFileSync('icons/icon48.png', createPNG(48, 48));
-fs.writeFileSync('icons/icon128.png', createPNG(128, 128));
-console.log('Icons generated successfully.');
+fs.writeFileSync('icons/icon16.png', createIconPNG(16));
+fs.writeFileSync('icons/icon48.png', createIconPNG(48));
+fs.writeFileSync('icons/icon128.png', createIconPNG(128));
+console.log('Novos icones gerados com arco completo e antialiasing 4x!');
