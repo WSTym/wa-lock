@@ -15,3 +15,5 @@ npm-debug.log*
 # Pacotes de release locais
 *.zip
 
+# Scripts utilitários locais
+generate_icons.js
