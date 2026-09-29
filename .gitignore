@@ -1,0 +1,13 @@
+# Dependências e caches
+node_modules/
+.DS_Store
+Thumbs.db
+
+# Logs e arquivos de sistema
+*.log
+npm-debug.log*
+
+# Chaves e credenciais locais
+*.pem
+.env
+.env.local

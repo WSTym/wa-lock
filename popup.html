@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WhatsApp Web - Bloqueio Rápido</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="logo-wrapper">
+        <svg class="logo-icon" viewBox="0 0 24 24">
+          <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/>
+        </svg>
+      </div>
+      <div class="header-info">
+        <h1>Bloqueio Rápido</h1>
+        <p class="subtitle">WhatsApp Web</p>
+      </div>
+    </div>
+
+    <div class="card-status" id="tabStatus">
+      <div class="status-dot online"></div>
+      <span class="status-text" id="statusText">Verificando WhatsApp...</span>
+    </div>
+
+    <button id="btnLock" class="action-btn" type="button">
+      <svg class="btn-icon" viewBox="0 0 24 24">
+        <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/>
+      </svg>
+      <span>Fechar & Bloquear Agora</span>
+    </button>
+
+    <div class="shortcut-box">
+      <span class="shortcut-label">Atalho de teclado</span>
+      <div class="keys">
+        <kbd>Alt</kbd>
+        <span>+</span>
+        <kbd>L</kbd>
+      </div>
+    </div>
+
+    <div class="info-footer">
+      <p>💡 Certifique-se de que a opção nativa <strong>Bloqueio do app</strong> está habilitada em <em>Configurações > Privacidade</em> do WhatsApp Web.</p>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
