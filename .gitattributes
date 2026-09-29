@@ -1,0 +1,3 @@
+# Forçar LF para arquivos de texto
+* text=auto eol=lf
+*.png binary

@@ -11,3 +11,7 @@ npm-debug.log*
 *.pem
 .env
 .env.local
+
+# Pacotes de release locais
+*.zip
+
